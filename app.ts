@@ -1,17 +1,39 @@
-// function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
-// 	const originalDescriptor = descriptor.value;
+//Project State Management
+class ProjectState {
+	private projects: any[] = [];
+	private static instance: ProjectState;
+	private listeners: any[] = [];
 
-// 	const adjDescriptor: PropertyDescriptor = {
-// 		configurable: true,
-// 		enumerable: false,
-// 		get() {
-// 			const boundFn = originalDescriptor.bind(this);
-// 			return boundFn;
-// 		},
-// 	};
+	private constructor() {}
 
-// 	return adjDescriptor;
-// }
+	static getInstance() {
+		if (this.instance) {
+			return this.instance;
+		}
+		this.instance = new ProjectState();
+		return this.instance;
+	}
+
+	addProject(title: string, description: string, numOfPeople: number) {
+		const newObject = {
+			id: Math.random().toString(),
+			title,
+			description,
+			people: numOfPeople,
+		};
+
+		this.projects.push(newObject);
+		for (const listener of this.listeners) {
+			listener(this.projects.slice());
+		}
+	}
+
+	addListeners(listenerFn: Function) {
+		this.listeners.push(listenerFn);
+	}
+}
+
+const projectState = ProjectState.getInstance();
 
 interface validatable {
 	value: string | number;
@@ -62,6 +84,7 @@ class ProjectList {
 	templateElement: HTMLTemplateElement;
 	hostElement: HTMLDivElement;
 	element: HTMLElement;
+	assignedProjects: any[];
 
 	constructor(private type: "finished" | "active") {
 		this.templateElement = document.getElementById(
@@ -76,6 +99,10 @@ class ProjectList {
 
 		this.element = importedNode.firstElementChild as HTMLElement;
 		this.element.id = `${this.type}-projects`;
+
+		projectState.addListeners((projects: any[]) => {
+			this.assignedProjects = projects;
+		});
 
 		this.attach();
 		this.renderContent();
@@ -172,6 +199,7 @@ class ProjectInput {
 		const userInputs = this.getInputs();
 		if (Array.isArray(userInputs)) {
 			const [title, desc, people] = userInputs;
+			projectState.addProject(title, desc, people);
 			console.log(title, desc, people);
 		}
 		this.clearInputs();
@@ -195,3 +223,18 @@ class ProjectInput {
 const prjInput = new ProjectInput();
 const activePrjs = new ProjectList("active");
 const finishedPrjs = new ProjectList("finished");
+
+// function autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+// 	const originalDescriptor = descriptor.value;
+
+// 	const adjDescriptor: PropertyDescriptor = {
+// 		configurable: true,
+// 		enumerable: false,
+// 		get() {
+// 			const boundFn = originalDescriptor.bind(this);
+// 			return boundFn;
+// 		},
+// 	};
+
+// 	return adjDescriptor;
+// }
