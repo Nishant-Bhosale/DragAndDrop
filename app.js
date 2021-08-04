@@ -1,3 +1,20 @@
+//Project status enum
+var ProjectStatus;
+(function (ProjectStatus) {
+    ProjectStatus[ProjectStatus["Active"] = 0] = "Active";
+    ProjectStatus[ProjectStatus["Finished"] = 1] = "Finished";
+})(ProjectStatus || (ProjectStatus = {}));
+//Project Class
+var Project = /** @class */ (function () {
+    function Project(id, title, description, numOfPeople, status) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.numOfPeople = numOfPeople;
+        this.status = status;
+    }
+    return Project;
+}());
 //Project State Management
 var ProjectState = /** @class */ (function () {
     function ProjectState() {
@@ -12,12 +29,7 @@ var ProjectState = /** @class */ (function () {
         return this.instance;
     };
     ProjectState.prototype.addProject = function (title, description, numOfPeople) {
-        var newObject = {
-            id: Math.random().toString(),
-            title: title,
-            description: description,
-            people: numOfPeople
-        };
+        var newObject = new Project(Math.random().toString(), title, description, numOfPeople, ProjectStatus.Active);
         this.projects.push(newObject);
         for (var _i = 0, _a = this.listeners; _i < _a.length; _i++) {
             var listener = _a[_i];
@@ -66,7 +78,13 @@ var ProjectList = /** @class */ (function () {
         this.element = importedNode.firstElementChild;
         this.element.id = this.type + "-projects";
         projectState.addListeners(function (projects) {
-            _this.assignedProjects = projects;
+            var relevantProjects = projects.filter(function (project) {
+                if (_this.type === "active") {
+                    return project.status === ProjectStatus.Active;
+                }
+                return project.status === ProjectStatus.Finished;
+            });
+            _this.assignedProjects = relevantProjects;
             _this.renderProjects();
         });
         this.attach();
@@ -74,6 +92,7 @@ var ProjectList = /** @class */ (function () {
     }
     ProjectList.prototype.renderProjects = function () {
         var listEl = document.getElementById(this.type + "-projects-list");
+        listEl.innerHTML = "";
         for (var _i = 0, _a = this.assignedProjects; _i < _a.length; _i++) {
             var prjItem = _a[_i];
             var listItem = document.createElement("li");
