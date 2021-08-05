@@ -1,3 +1,15 @@
+//Drag and Drop Interfaces
+interface Draggable {
+	dragStartHandler(event: DragEvent): void;
+	dragEndHandler(event: DragEvent): void;
+}
+
+interface DragTarget {
+	dragOverHandler(event: DragEvent): void;
+	dropHandler(event: DragEvent): void;
+	dragLeaveHandler(event: DragEvent): void;
+}
+
 //Project status enum
 enum ProjectStatus {
 	Active,
@@ -150,8 +162,19 @@ function validate(validatableObject: validatable) {
 }
 
 //ProjectItem class
-class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+class ProjectItem
+	extends Component<HTMLUListElement, HTMLLIElement>
+	implements Draggable
+{
 	private project: Project;
+
+	get persons() {
+		if (this.project.numOfPeople === 1) {
+			return "1 person assigned";
+		} else {
+			return `${this.project.numOfPeople} persons assigned`;
+		}
+	}
 
 	constructor(hostID: string, project: Project) {
 		super("single-project", hostID, false, project.id);
@@ -161,11 +184,26 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
 		this.renderContent();
 	}
 
-	configure() {}
+	dragStartHandler(event: DragEvent) {
+		console.log(event);
+	}
+
+	dragEndHandler(_: DragEvent) {
+		console.log("drag end");
+	}
+
+	configure() {
+		this.element.addEventListener(
+			"dragstart",
+			this.dragStartHandler.bind(this),
+		);
+
+		this.element.addEventListener("dragend", this.dragEndHandler.bind(this));
+	}
+
 	renderContent() {
 		this.element.querySelector("h2")!.textContent = this.project.title;
-		this.element.querySelector("h3")!.textContent =
-			this.project.numOfPeople.toString();
+		this.element.querySelector("h3")!.textContent = this.persons;
 		this.element.querySelector("p")!.textContent = this.project.description;
 	}
 }
@@ -189,7 +227,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 				}
 				return project.status === ProjectStatus.Finished;
 			});
-			console.log(relevantProjects);
+
 			this.assignedProjects = relevantProjects;
 			this.renderProjects();
 		});
@@ -208,7 +246,6 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 			`${this.type}-projects-list`,
 		)! as HTMLUListElement;
 
-		console.log(listEl);
 		listEl.innerHTML = "";
 		for (const prjItem of this.assignedProjects) {
 			new ProjectItem(this.element.querySelector("ul")!.id, prjItem);
