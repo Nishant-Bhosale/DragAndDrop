@@ -44,7 +44,7 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
 		}
 
 		this.attach(insertAtStart);
-		this.configure();
+		// this.configure();
 		// this.renderContent();
 	}
 
@@ -60,15 +60,23 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
 }
 
 //Custom Listener Type
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
+class State<T> {
+	protected listeners: Listener<T>[] = [];
+
+	addListeners(listenerFn: Listener<T>) {
+		this.listeners.push(listenerFn);
+	}
+}
 //Project State Management
-class ProjectState {
-	private listeners: Listener[] = [];
+class ProjectState extends State<Project> {
 	private projects: any[] = [];
 	private static instance: ProjectState;
 
-	private constructor() {}
+	private constructor() {
+		super();
+	}
 
 	static getInstance() {
 		if (this.instance) {
@@ -91,10 +99,6 @@ class ProjectState {
 		for (const listener of this.listeners) {
 			listener(this.projects.slice());
 		}
-	}
-
-	addListeners(listenerFn: Listener) {
-		this.listeners.push(listenerFn);
 	}
 }
 
@@ -145,15 +149,36 @@ function validate(validatableObject: validatable) {
 	return isValid;
 }
 
+//ProjectItem class
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+	private project: Project;
+
+	constructor(hostID: string, project: Project) {
+		super("single-project", hostID, false, project.id);
+		this.project = project;
+
+		this.configure();
+		this.renderContent();
+	}
+
+	configure() {}
+	renderContent() {
+		this.element.querySelector("h2")!.textContent = this.project.title;
+		this.element.querySelector("h3")!.textContent =
+			this.project.numOfPeople.toString();
+		this.element.querySelector("p")!.textContent = this.project.description;
+	}
+}
 //ProjectLists class
 class ProjectList extends Component<HTMLDivElement, HTMLElement> {
-	assignedProjects: Project[] = [];
+	assignedProjects: Project[];
 
 	constructor(private type: "finished" | "active") {
 		super("project-list", "app", false, `${type}-projects`);
+		this.assignedProjects = [];
 
+		this.configure();
 		this.renderContent();
-		this.renderProjects();
 	}
 
 	configure() {
@@ -178,7 +203,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 		)!.textContent = `${this.type.toUpperCase()} PROJECTS`;
 	}
 
-	private renderProjects() {
+	renderProjects() {
 		let listEl = document.getElementById(
 			`${this.type}-projects-list`,
 		)! as HTMLUListElement;
@@ -186,9 +211,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 		console.log(listEl);
 		listEl.innerHTML = "";
 		for (const prjItem of this.assignedProjects) {
-			const listItem = document.createElement("li");
-			listItem.textContent = prjItem.title;
-			listEl.appendChild(listItem);
+			new ProjectItem(this.element.querySelector("ul")!.id, prjItem);
 		}
 	}
 }
@@ -249,6 +272,7 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 			!validate(descriptionValidatable) ||
 			!validate(peopleValidatable)
 		) {
+			alert("Invalid");
 			return;
 		} else {
 			return [titleInput, descriptionInput, +peopleInput];
