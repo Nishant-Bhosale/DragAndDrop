@@ -128,7 +128,18 @@ class ProjectList extends Component {
         this.configure();
         this.renderContent();
     }
+    dragOverHandler(_) {
+        const listEl = this.element.querySelector("ul");
+        listEl.classList.add("droppable");
+    }
+    dragLeaveHandler(_) {
+        const listEl = this.element.querySelector("ul");
+        listEl.classList.remove("droppable");
+    }
+    dropHandler(_) { }
     configure() {
+        this.element.addEventListener("dragover", this.dragOverHandler.bind(this));
+        this.element.addEventListener("dragleave", this.dragLeaveHandler.bind(this));
         projectState.addListeners((projects) => {
             const relevantProjects = projects.filter((project) => {
                 if (this.type === "active") {
